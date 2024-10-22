@@ -19,8 +19,13 @@ package io.github.dmikurube.vertx.stream;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
+import java.util.stream.Stream;
 
 public final class StreamReadStream implements ReadStream<Buffer> {
+    public StreamReadStream(final Stream<?> stream) {
+        this.stream = stream;
+    }
+
     @Override
     public StreamReadStream exceptionHandler(final Handler<Throwable> handler) {
         return this;
@@ -50,4 +55,6 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     public StreamReadStream endHandler(final Handler<Void> endHandler) {
         return this;
     }
+
+    private final Stream<?> stream;
 }
