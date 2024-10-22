@@ -1,0 +1,27 @@
+---
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      vertx:
+        applies-to: version-updates
+        patterns:
+        - "io.vertx:*"
+        update-types:
+        - "minor"
+        - "patch"
+      slf4j:
+        applies-to: version-updates
+        patterns:
+        - "org.slf4j:*"
+        - "ch.qos.logback:*"
+        update-types:
+        - "minor"
+        - "patch"

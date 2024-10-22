@@ -1,0 +1,169 @@
+plugins {
+    id "java"
+    id "application"
+    id "maven-publish"
+    id "signing"
+    id "checkstyle"
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = "io.github.dmikurube"
+version = "0.1.0-SNAPSHOT"
+
+configurations {
+    compileClasspath.resolutionStrategy.activateDependencyLocking()
+    runtimeClasspath.resolutionStrategy.activateDependencyLocking()
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+    options.encoding = "UTF-8"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    implementation libs.bundles.vertx
+
+    implementation libs.slf4j.api
+    implementation libs.logback.classic
+
+    testImplementation platform(libs.junit5.bom)
+    testImplementation libs.bundles.junit5.implementation
+
+    testRuntimeOnly libs.bundles.junit5.runtime
+}
+
+javadoc {
+    title = "${project.name} v${project.version}"
+    options {
+        locale = "en_US"
+        encoding = "UTF-8"
+        links "https://docs.oracle.com/en/java/javase/21/docs/api/"
+    }
+}
+
+jar {
+    metaInf {
+        from rootProject.file("LICENSE")
+    }
+}
+
+sourcesJar {
+    metaInf {
+        from rootProject.file("LICENSE")
+    }
+}
+
+javadocJar {
+    metaInf {
+        from rootProject.file("LICENSE")
+    }
+}
+
+task checkDependencies {
+    notCompatibleWithConfigurationCache("The task \"checkDependencies\" filters configurations at execution time.")
+    doLast {
+        configurations.findAll { it.canBeResolved }.each { it.resolve() }
+    }
+}
+
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+
+            from components.java
+            // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+            // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+            pom {  // https://central.sonatype.org/pages/requirements.html
+                packaging "jar"
+
+                name = project.name
+                description = project.description
+                url = "https://github.com/dmikurube/vertx-stream"
+
+                licenses {
+                    license {
+                        // http://central.sonatype.org/pages/requirements.html#license-information
+                        name = "The Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                        distribution = "repo"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "dmikurube"
+                        name = "Dai MIKURUBE"
+                        email = "dmikurube@acm.org"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/dmikurube/vertx-stream.git"
+                    developerConnection = "scm:git:git@github.com:dmikurube/vertx-stream.git"
+                    url = "https://github.com/dmikurube/vertx-stream"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    if (project.hasProperty("signingKey") && project.hasProperty("signingPassword")) {
+        logger.lifecycle("Signing with an in-memory key.")
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
+    sign publishing.publications.maven
+}
+
+application {
+    mainClass = "io.github.dmikurube.vertx.stream.Main"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "started", "passed", "skipped", "failed", "standardOut", "standardError"
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showCauses = true
+        showExceptions = true
+        showStackTraces = true
+        showStandardStreams = true
+        outputs.upToDateWhen { false }
+    }
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
+checkstyle {
+    toolVersion = libs.versions.checkstyle.get()
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    configProperties = [
+        "org.checkstyle.google.suppressionfilter.config": file("${rootProject.projectDir}/config/checkstyle/checkstyle-suppressions.xml")
+    ]
+    ignoreFailures = false
+    maxWarnings = 0
+}
