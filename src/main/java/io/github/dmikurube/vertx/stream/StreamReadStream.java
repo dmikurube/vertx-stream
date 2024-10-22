@@ -22,32 +22,32 @@ import io.vertx.core.streams.ReadStream;
 
 public final class StreamReadStream implements ReadStream<Buffer> {
     @Override
-    public ReadStream<Buffer> exceptionHandler(final Handler<Throwable> handler) {
+    public StreamReadStream exceptionHandler(final Handler<Throwable> handler) {
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> handler(final Handler<Buffer> handler) {
+    public StreamReadStream handler(final Handler<Buffer> handler) {
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> pause() {
+    public StreamReadStream pause() {
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> resume() {
+    public StreamReadStream resume() {
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> fetch(final long amount) {
+    public StreamReadStream fetch(final long amount) {
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> endHandler(final Handler<Void> endHandler) {
+    public StreamReadStream endHandler(final Handler<Void> endHandler) {
         return this;
     }
 }
