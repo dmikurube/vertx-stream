@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 public final class StreamReadStream implements ReadStream<Buffer> {
     public StreamReadStream(final Stream<?> stream) {
         this.stream = stream;
+        this.demand = Long.MAX_VALUE;
     }
 
     @Override
@@ -57,4 +58,6 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     }
 
     private final Stream<?> stream;
+
+    private final long demand;
 }
