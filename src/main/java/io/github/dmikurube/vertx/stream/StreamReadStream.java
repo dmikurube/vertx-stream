@@ -74,5 +74,5 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     private Handler<Void> endHandler;
 
-    private final long demand;
+    private long demand;
 }
