@@ -29,13 +29,17 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     @Override
     public StreamReadStream exceptionHandler(final Handler<Throwable> handler) {
-        this.exceptionHandler = handler;
+        synchronized (this) {
+            this.exceptionHandler = handler;
+        }
         return this;
     }
 
     @Override
     public StreamReadStream handler(final Handler<Buffer> handler) {
-        this.handler = handler;
+        synchronized (this) {
+            this.handler = handler;
+        }
         return this;
     }
 
@@ -56,7 +60,9 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     @Override
     public StreamReadStream endHandler(final Handler<Void> endHandler) {
-        this.endHandler = endHandler;
+        synchronized (this) {
+            this.endHandler = endHandler;
+        }
         return this;
     }
 
