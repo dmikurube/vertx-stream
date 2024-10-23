@@ -21,6 +21,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -31,7 +32,10 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
         this.vertx = vertx;
         this.context = vertx.getOrCreateContext();
+
         this.stream = stream;
+        this.iter = stream.iterator();
+
         this.exceptionHandler = (e -> {});
         this.handler = (e -> {});
         this.endHandler = (e -> {});
@@ -105,6 +109,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     private final Context context;
 
     private final Stream<?> stream;
+    private final Iterator<?> iter;
 
     private Handler<Throwable> exceptionHandler;
 
