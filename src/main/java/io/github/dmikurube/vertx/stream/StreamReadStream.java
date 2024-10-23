@@ -21,10 +21,14 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public final class StreamReadStream implements ReadStream<Buffer> {
     public StreamReadStream(final Vertx vertx, final Stream<?> stream) {
+        Objects.requireNonNull(vertx);
+        Objects.requireNonNull(stream);
+
         this.vertx = vertx;
         this.context = vertx.getOrCreateContext();
         this.stream = stream;
@@ -37,6 +41,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     @Override
     public StreamReadStream exceptionHandler(final Handler<Throwable> handler) {
+        Objects.requireNonNull(handler);
         synchronized (this) {
             this.exceptionHandler = handler;
         }
@@ -45,6 +50,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     @Override
     public StreamReadStream handler(final Handler<Buffer> handler) {
+        Objects.requireNonNull(handler);
         synchronized (this) {
             this.handler = handler;
         }
@@ -68,6 +74,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     @Override
     public StreamReadStream endHandler(final Handler<Void> endHandler) {
+        Objects.requireNonNull(endHandler);
         synchronized (this) {
             this.endHandler = endHandler;
         }
