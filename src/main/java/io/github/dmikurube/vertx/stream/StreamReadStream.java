@@ -24,6 +24,9 @@ import java.util.stream.Stream;
 public final class StreamReadStream implements ReadStream<Buffer> {
     public StreamReadStream(final Stream<?> stream) {
         this.stream = stream;
+        this.exceptionHandler = (e -> {});
+        this.handler = (e -> {});
+        this.endHandler = (e -> {});
         this.demand = Long.MAX_VALUE;
     }
 
