@@ -81,6 +81,17 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         return this;
     }
 
+    private void flushPreparedData(final Buffer buffer) {
+        synchronized (this) {
+            if (this.handler != null) {
+                this.requireRunningInEqualVertxContext();
+                this.handler.handle(buffer);
+            }
+
+            this.readInProgress = false;
+        }
+    }
+
     private void requireRunningInEqualVertxContext() {
         final Context currentContext = this.vertx.getOrCreateContext();
         if (!this.context.equals(currentContext)) {
