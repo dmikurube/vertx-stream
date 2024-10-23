@@ -16,13 +16,17 @@
 
 package io.github.dmikurube.vertx.stream;
 
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
 import java.util.stream.Stream;
 
 public final class StreamReadStream implements ReadStream<Buffer> {
-    public StreamReadStream(final Stream<?> stream) {
+    public StreamReadStream(final Vertx vertx, final Stream<?> stream) {
+        this.vertx = vertx;
+        this.context = vertx.getOrCreateContext();
         this.stream = stream;
         this.exceptionHandler = (e -> {});
         this.handler = (e -> {});
@@ -69,6 +73,18 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         }
         return this;
     }
+
+    private void requireRunningInEqualVertxContext() {
+        final Context currentContext = this.vertx.getOrCreateContext();
+        if (!this.context.equals(currentContext)) {
+            throw new IllegalStateException(
+                    "StreamReadStream must run in the same Vert.x context in which it was created. "
+                    + this.context + " is expected, but " + currentContext);
+        }
+    }
+
+    private final Vertx vertx;
+    private final Context context;
 
     private final Stream<?> stream;
 
