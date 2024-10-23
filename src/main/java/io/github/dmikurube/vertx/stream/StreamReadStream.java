@@ -27,6 +27,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         this.exceptionHandler = (e -> {});
         this.handler = (e -> {});
         this.endHandler = (e -> {});
+        this.readInProgress = false;
         this.demand = Long.MAX_VALUE;
     }
 
@@ -76,6 +77,8 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     private Handler<Buffer> handler;
 
     private Handler<Void> endHandler;
+
+    private boolean readInProgress;
 
     private long demand;
 }
