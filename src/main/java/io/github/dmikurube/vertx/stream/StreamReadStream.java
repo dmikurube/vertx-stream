@@ -36,10 +36,13 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         this.stream = stream;
         this.iter = stream.iterator();
 
+        this.buffer = Buffer.buffer(65536);
+
         this.exceptionHandler = (e -> {});
         this.handler = (e -> {});
         this.endHandler = (e -> {});
         this.readInProgress = false;
+        this.isStreamEnded = false;
         this.demand = Long.MAX_VALUE;
     }
 
@@ -85,15 +88,108 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         return this;
     }
 
-    private void flushPreparedData(final Buffer buffer) {
+    private static class ReadResult {
+        public ReadResult(final String string, final boolean hasNext) {
+            this.string = string;
+            this.hasNext = hasNext;
+        }
+
+        @Override
+        public String toString() {
+            return this.string;
+        }
+
+        public boolean hasNext() {
+            return this.hasNext;
+        }
+
+        private final String string;
+        private final boolean hasNext;
+    }
+
+    private void readFromStreamAndPushToBufferAndDoHandleIfRequired() {
+        if (this.readInProgress) {
+            // Schedule next read.
+            if (!this.isStreamEnded && this.demand > 0) {
+                this.context.runOnContext(v -> this.readFromStreamAndPushToBufferAndDoHandleIfRequired());
+            }
+            return;
+        }
+
+        if (this.demand <= 0) {
+            return;
+        }
+        this.demand--;
+
+        this.readInProgress = true;
+
+        this.vertx.<ReadResult>executeBlocking(() -> {
+            if (this.iter.hasNext()) {
+                final Object next = this.iter.next();
+                if (next == null) {
+                    throw new NullPointerException("Stream contains null.");
+                }
+                return new ReadResult(next.toString(), false);
+            } else {
+                return new ReadResult("end", true);
+            }
+        }, true /* ordered */, asyncResult -> {
+            if (asyncResult.failed()) {
+                this.doHandleException(asyncResult.cause());
+                return;
+            }
+            final ReadResult result = asyncResult.result();
+            this.buffer.appendString(result.toString());
+            if ((!result.hasNext()) || this.buffer.length() > 60000) {
+                this.doHandle();
+                if (!result.hasNext()) {
+                    this.doHandleEnd();
+                    this.isStreamEnded = true;
+                    return;
+                }
+            }
+            this.scheduleNextRead();
+        });
+    }
+
+    private void scheduleNextRead() {
+        synchronized (this) {
+            if (this.demand > 0) {
+                this.context.runOnContext(nothing -> this.readFromStreamAndPushToBufferAndDoHandleIfRequired());
+            }
+        }
+    }
+
+    private void doHandle() {
         synchronized (this) {
             if (this.handler != null) {
                 this.requireRunningInEqualVertxContext();
-                this.handler.handle(buffer);
+                this.handler.handle(this.buffer);
+                this.buffer = Buffer.buffer(65536);
             }
-
             this.readInProgress = false;
         }
+    }
+
+    private void doHandleEnd() {
+        synchronized (this) {
+            if (this.endHandler != null) {
+                this.requireRunningInEqualVertxContext();
+                this.endHandler.handle(null);
+            }
+        }
+    }
+
+    private void doHandleException(final Throwable ex) {
+        if (this.exceptionHandler != null) {
+            this.exceptionHandler.handle(ex);
+        } else {
+            ex.printStackTrace();
+        }
+    }
+
+    private void handleExceptionLazily(final Throwable ex) {
+        this.context.runOnContext(nothing -> this.doHandleException(ex));
     }
 
     private void requireRunningInEqualVertxContext() {
@@ -111,6 +207,8 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     private final Stream<?> stream;
     private final Iterator<?> iter;
 
+    private Buffer buffer;
+
     private Handler<Throwable> exceptionHandler;
 
     private Handler<Buffer> handler;
@@ -118,6 +216,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     private Handler<Void> endHandler;
 
     private boolean readInProgress;
+    private boolean isStreamEnded;
 
     private long demand;
 }
