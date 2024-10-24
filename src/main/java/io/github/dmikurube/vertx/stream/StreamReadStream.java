@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public final class StreamReadStream implements ReadStream<Buffer> {
-    public StreamReadStream(final Vertx vertx, final Stream<?> stream) {
+    public StreamReadStream(final Vertx vertx, final Stream<?> stream, final String head, final String foot) {
         Objects.requireNonNull(vertx);
         Objects.requireNonNull(stream);
 
@@ -36,7 +36,11 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         this.stream = stream;
         this.iter = stream.iterator();
 
+        this.head = head;
+        this.foot = foot;
+
         this.buffer = Buffer.buffer(65536);
+        this.buffer.appendString(head);
 
         this.exceptionHandler = (e -> {});
         this.handler = (e -> {});
@@ -131,7 +135,7 @@ public final class StreamReadStream implements ReadStream<Buffer> {
                 }
                 return new ReadResult(next.toString(), false);
             } else {
-                return new ReadResult("end", true);
+                return new ReadResult(this.foot, true);
             }
         }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
@@ -206,6 +210,9 @@ public final class StreamReadStream implements ReadStream<Buffer> {
 
     private final Stream<?> stream;
     private final Iterator<?> iter;
+
+    private final String head;
+    private final String foot;
 
     private Buffer buffer;
 
