@@ -64,22 +64,42 @@ public final class StreamReadStream implements ReadStream<Buffer> {
         Objects.requireNonNull(handler);
         synchronized (this) {
             this.handler = handler;
+            if (handler != null && this.demand > 0) {
+                this.readFromStreamAndPushToBufferAndDoHandleIfRequired();
+            }
         }
         return this;
     }
 
     @Override
     public StreamReadStream pause() {
+        synchronized (this) {
+            this.demand = 0L;
+        }
         return this;
     }
 
     @Override
     public StreamReadStream resume() {
+        synchronized (this) {
+            this.fetch(Long.MAX_VALUE);
+        }
         return this;
     }
 
     @Override
     public StreamReadStream fetch(final long amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("amount must be non-negative.");
+        }
+        synchronized (this) {
+            if ((Long.MAX_VALUE - amount) >= this.demand) {  // Avoid overflow.
+                this.demand = this.demand + amount;
+            } else {
+                this.demand = Long.MAX_VALUE;
+            }
+            this.readFromStreamAndPushToBufferAndDoHandleIfRequired();
+        }
         return this;
     }
 
