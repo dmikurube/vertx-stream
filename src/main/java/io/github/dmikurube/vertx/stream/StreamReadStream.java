@@ -133,9 +133,9 @@ public final class StreamReadStream implements ReadStream<Buffer> {
                 if (next == null) {
                     throw new NullPointerException("Stream contains null.");
                 }
-                return new ReadResult(next.toString(), false);
+                return new ReadResult(next.toString(), true);
             } else {
-                return new ReadResult(this.foot, true);
+                return new ReadResult(this.foot, false);
             }
         }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
