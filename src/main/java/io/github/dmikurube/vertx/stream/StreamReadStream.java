@@ -132,7 +132,9 @@ public final class StreamReadStream implements ReadStream<Buffer> {
     }
 
     private void readFromStreamAndPushToBufferAndDoHandleIfRequired() {
+        System.out.println("reading...");
         if (this.readInProgress) {
+            System.out.println("reading in progress");
             // Schedule next read.
             if (!this.isStreamEnded && this.demand > 0) {
                 this.context.runOnContext(v -> this.readFromStreamAndPushToBufferAndDoHandleIfRequired());
