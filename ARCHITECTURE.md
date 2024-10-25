@@ -6,8 +6,11 @@ References
 #### Streaming the response
 
 * [Adapter from java.util.Stream io.vertx.core.streams.ReadStream](https://groups.google.com/g/vertx/c/lEJ2nScWSa8) (Vert.x Google Group, 2021-12-14)
+    * ↑ May not be working fine...?
 * [How to create a Vert.x ReadStream from an InputStream](https://stackoverflow.com/questions/66158455/how-to-create-a-vert-x-readstream-from-an-inputstream)  (Stack Overflow, 2021-02-11)
 * [Streaming S3 object to VertX Http Server Response](https://stackoverflow.com/questions/51664126/streaming-s3-object-to-vertx-http-server-response) (Stack Overflow, 2018-08-03)
+* [Wrapping an InputStream into a ReadStream<Buffer> for vert.x](https://gist.github.com/Stwissel/a7f8ce79785afd49eb2ced69b56335de) (GitHub Gist, 2016-04-24)
+    * ↑ Good reference!
 
 #### Streaming in EventBus
 
