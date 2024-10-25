@@ -66,6 +66,7 @@ public class HttpRequestHandlerVerticle extends AbstractVerticle {
                     final MultiMap queryParams = context.queryParams(StandardCharsets.UTF_8);
 
                     response.send(new StreamReadStream(vertx, Stream.of("foo", path, "bar"), "head", "foot"), asyncResult -> {
+                        /*
                         if (asyncResult.failed()) {
                             response.setStatusCode(400);
                             response.end();
@@ -73,6 +74,7 @@ public class HttpRequestHandlerVerticle extends AbstractVerticle {
                         }
                         response.setStatusCode(200);
                         response.end();
+                        */
                     });
                 });
 
