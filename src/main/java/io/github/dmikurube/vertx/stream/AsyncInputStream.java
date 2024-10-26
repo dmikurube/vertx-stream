@@ -32,26 +32,6 @@ import java.util.Objects;
  * @author stw, antimist
  */
 public class AsyncInputStream implements ReadStream<Buffer> {
-
-    public static final int DEFAULT_READ_BUFFER_SIZE = 8192;
-    private static final Logger log = LoggerFactory.getLogger(AsyncInputStream.class);
-
-    // Based on the inputStream with the real data
-    private final ReadableByteChannel ch;
-    private final Vertx vertx;
-    private final Context context;
-
-    private boolean closed;
-    private boolean readInProgress;
-
-    private Handler<Buffer> dataHandler;
-    private Handler<Void> endHandler;
-    private Handler<Throwable> exceptionHandler;
-    private final InboundBuffer<Buffer> queue;
-
-    private int readBufferSize = DEFAULT_READ_BUFFER_SIZE;
-    private long readPos;
-
     /**
      * Create a new Async InputStream that can we used with a Pump
      *
@@ -72,25 +52,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         queue.drainHandler(v -> {
             doRead();
         });
-    }
-
-    public void close() {
-        closeInternal(null);
-    }
-
-    public void close(Handler<AsyncResult<Void>> handler) {
-        closeInternal(handler);
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
-     */
-    @Override
-    public synchronized AsyncInputStream endHandler(Handler<Void> endHandler) {
-        check();
-        this.endHandler = endHandler;
-        return this;
     }
 
     /*
@@ -151,40 +112,18 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         return this;
     }
 
-    private void check() {
-        if (this.closed) {
-            throw new IllegalStateException("Inputstream is closed");
-        }
-    }
-
-    private void checkContext() {
-        if (!vertx.getOrCreateContext().equals(context)) {
-            throw new IllegalStateException("AsyncInputStream must only be used in the context that created it, expected: " + this.context
-                + " actual " + vertx.getOrCreateContext());
-        }
-    }
-
-    private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
+    /*
+     * (non-Javadoc)
+     * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
+     */
+    @Override
+    public synchronized AsyncInputStream endHandler(Handler<Void> endHandler) {
         check();
-        closed = true;
-        doClose(handler);
+        this.endHandler = endHandler;
+        return this;
     }
 
-    private void doClose(Handler<AsyncResult<Void>> handler) {
-
-        try {
-            ch.close();
-            if (handler != null) {
-                this.vertx.runOnContext(v -> handler.handle(Future.succeededFuture()));
-            }
-        } catch (IOException e) {
-            if (handler != null) {
-                this.vertx.runOnContext(v -> handler.handle(Future.failedFuture(e)));
-            }
-        }
-    }
-
-    public synchronized AsyncInputStream read(Buffer buffer, int offset, long position, int length,
+    private synchronized AsyncInputStream read(Buffer buffer, int offset, long position, int length,
                                               Handler<AsyncResult<Buffer>> handler) {
         Objects.requireNonNull(buffer, "buffer");
         Objects.requireNonNull(handler, "handler");
@@ -301,4 +240,63 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
+    private void checkContext() {
+        if (!vertx.getOrCreateContext().equals(context)) {
+            throw new IllegalStateException("AsyncInputStream must only be used in the context that created it, expected: " + this.context
+                + " actual " + vertx.getOrCreateContext());
+        }
+    }
+
+    private void check() {
+        if (this.closed) {
+            throw new IllegalStateException("Inputstream is closed");
+        }
+    }
+
+    public void close(Handler<AsyncResult<Void>> handler) {
+        closeInternal(handler);
+    }
+
+    private void close() {
+        closeInternal(null);
+    }
+
+    private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
+        check();
+        closed = true;
+        doClose(handler);
+    }
+
+    private void doClose(Handler<AsyncResult<Void>> handler) {
+        try {
+            ch.close();
+            if (handler != null) {
+                this.vertx.runOnContext(v -> handler.handle(Future.succeededFuture()));
+            }
+        } catch (IOException e) {
+            if (handler != null) {
+                this.vertx.runOnContext(v -> handler.handle(Future.failedFuture(e)));
+            }
+        }
+    }
+
+    public static final int DEFAULT_READ_BUFFER_SIZE = 8192;
+
+    private static final Logger log = LoggerFactory.getLogger(AsyncInputStream.class);
+
+    // Based on the inputStream with the real data
+    private final ReadableByteChannel ch;
+    private final Vertx vertx;
+    private final Context context;
+
+    private boolean closed;
+    private boolean readInProgress;
+
+    private Handler<Buffer> dataHandler;
+    private Handler<Void> endHandler;
+    private Handler<Throwable> exceptionHandler;
+    private final InboundBuffer<Buffer> queue;
+
+    private int readBufferSize = DEFAULT_READ_BUFFER_SIZE;
+    private long readPos;
 }
