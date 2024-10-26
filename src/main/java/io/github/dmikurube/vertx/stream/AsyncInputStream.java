@@ -163,13 +163,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
-        vertx.executeBlocking(future -> {
+        vertx.executeBlocking(() -> {
             try {
                 Integer bytesRead = this.byteChannel.read(buff);
-                future.complete(bytesRead);
+                return bytesRead;
             } catch (Exception e) {
                 log.error("", e);
-                future.fail(e);
+                throw e;
             }
 
         }, asyncResult -> {
