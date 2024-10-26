@@ -139,19 +139,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         return this;
     }
 
-    private synchronized AsyncInputStream read(Buffer buffer, int offset, long position, int length,
-                                              Handler<AsyncResult<Buffer>> handler) {
-        Objects.requireNonNull(buffer, "buffer");
-        Objects.requireNonNull(handler, "handler");
-        Arguments.require(offset >= 0, "offset must be >= 0");
-        Arguments.require(position >= 0, "position must be >= 0");
-        Arguments.require(length >= 0, "length must be >= 0");
-        this.requireOpen();
-        ByteBuffer bb = ByteBuffer.allocate(length);
-        doRead(buffer, offset, bb, position, handler);
-        return this;
-    }
-
     private void doRead() {
         this.requireOpen();
         doRead(ByteBuffer.allocate(readBufferSize));
