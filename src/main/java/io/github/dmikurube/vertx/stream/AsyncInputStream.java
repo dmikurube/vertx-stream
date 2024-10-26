@@ -63,9 +63,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * io.vertx.core.streams.ReadStream#exceptionHandler(io.vertx.core.Handler)
      */
     @Override
-    public synchronized AsyncInputStream exceptionHandler(Handler<Throwable> exceptionHandler) {
-        check();
-        this.exceptionHandler = exceptionHandler;
+    public AsyncInputStream exceptionHandler(final Handler<Throwable> handler) {
+        Objects.requireNonNull(handler);
+        synchronized (this) {
+            this.requireOpen();
+            this.exceptionHandler = handler;
+        }
         return this;
     }
 
@@ -74,13 +77,16 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#handler(io.vertx.core.Handler)
      */
     @Override
-    public synchronized AsyncInputStream handler(Handler<Buffer> handler) {
-        check();
-        this.dataHandler = handler;
-        if (this.dataHandler != null && !this.closed) {
-            this.doRead();
-        } else {
-            queue.clear();
+    public AsyncInputStream handler(final Handler<Buffer> handler) {
+        Objects.requireNonNull(handler);
+        synchronized (this) {
+            this.requireOpen();
+            this.handler = handler;
+            if (this.handler != null && !this.isClosed) {
+                this.doRead();
+            } else {
+                queue.clear();
+            }
         }
         return this;
     }
@@ -90,9 +96,11 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#pause()
      */
     @Override
-    public synchronized AsyncInputStream pause() {
-        check();
-        queue.pause();
+    public AsyncInputStream pause() {
+        synchronized (this) {
+            this.requireOpen();
+            queue.pause();
+        }
         return this;
     }
 
@@ -101,10 +109,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#resume()
      */
     @Override
-    public synchronized AsyncInputStream resume() {
-        check();
-        if (!closed) {
-            queue.resume();
+    public AsyncInputStream resume() {
+        synchronized (this) {
+            this.requireOpen();
+            if (!this.isClosed) {
+                queue.resume();
+            }
         }
         return this;
     }
@@ -120,9 +130,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
      */
     @Override
-    public synchronized AsyncInputStream endHandler(Handler<Void> endHandler) {
-        check();
-        this.endHandler = endHandler;
+    public AsyncInputStream endHandler(final Handler<Void> endHandler) {
+        Objects.requireNonNull(endHandler);
+        synchronized (this) {
+            this.requireOpen();
+            this.endHandler = endHandler;
+        }
         return this;
     }
 
@@ -133,14 +146,14 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         Arguments.require(offset >= 0, "offset must be >= 0");
         Arguments.require(position >= 0, "position must be >= 0");
         Arguments.require(length >= 0, "length must be >= 0");
-        check();
+        this.requireOpen();
         ByteBuffer bb = ByteBuffer.allocate(length);
         doRead(buffer, offset, bb, position, handler);
         return this;
     }
 
     private void doRead() {
-        check();
+        this.requireOpen();
         doRead(ByteBuffer.allocate(readBufferSize));
     }
 
@@ -214,7 +227,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private void handleData(Buffer buff) {
         Handler<Buffer> handler;
         synchronized (this) {
-            handler = this.dataHandler;
+            handler = this.handler;
         }
         if (handler != null) {
             checkContext();
@@ -225,7 +238,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private synchronized void handleEnd() {
         Handler<Void> endHandler;
         synchronized (this) {
-            dataHandler = null;
+            handler = null;
             endHandler = this.endHandler;
         }
         if (endHandler != null) {
@@ -250,8 +263,8 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private void check() {
-        if (this.closed) {
+    private void requireOpen() {
+        if (this.isClosed) {
             throw new IllegalStateException("Inputstream is closed");
         }
     }
@@ -265,8 +278,8 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     }
 
     private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
-        check();
-        closed = true;
+        this.requireOpen();
+        this.isClosed = true;
         doClose(handler);
     }
 
@@ -292,10 +305,10 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private final Vertx vertx;
     private final Context context;
 
-    private boolean closed;
+    private boolean isClosed;
     private boolean readInProgress;
 
-    private Handler<Buffer> dataHandler;
+    private Handler<Buffer> handler;
     private Handler<Void> endHandler;
     private Handler<Throwable> exceptionHandler;
     private final InboundBuffer<Buffer> queue;
