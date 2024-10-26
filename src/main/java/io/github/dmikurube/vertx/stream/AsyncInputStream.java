@@ -136,70 +136,74 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     private void doRead() {
         this.requireOpen();
-        doRead(ByteBuffer.allocate(READ_BUFFER_SIZE));
+        this.doReadFromQueueIntoByteBuffer(ByteBuffer.allocate(READ_BUFFER_SIZE));
     }
 
-    private synchronized void doRead(ByteBuffer bb) {
-        if (!readInProgress) {
-            readInProgress = true;
-            Buffer buff = Buffer.buffer(READ_BUFFER_SIZE);
-            doRead(buff, 0, bb, readPos, ar -> {
-                if (ar.succeeded()) {
-                    readInProgress = false;
-                    Buffer buffer = ar.result();
-                    readPos += buffer.length();
+    private synchronized void doReadFromQueueIntoByteBuffer(final ByteBuffer byteBuf) {
+        if (!this.readInProgress) {
+            this.readInProgress = true;
+            final Buffer vertxBuffer = Buffer.buffer(READ_BUFFER_SIZE);
+            this.doReadFromChannelAndPushIntoHandlerViaByteBuffer(vertxBuffer, 0, byteBuf, this.readPos, asyncResult -> {
+                if (asyncResult.succeeded()) {
+                    this.readInProgress = false;
+                    final Buffer resultVertxBuffer = asyncResult.result();
+                    this.readPos += resultVertxBuffer.length();
                     // Empty buffer represents end of file
-                    if (queue.write(buffer) && buffer.length() > 0) {
-                        doRead(bb);
+                    if (queue.write(resultVertxBuffer) && resultVertxBuffer.length() > 0) {
+                        this.doReadFromQueueIntoByteBuffer(byteBuf);
                     }
                 } else {
-                    handleException(ar.cause());
+                    this.handleException(asyncResult.cause());
                 }
             });
         }
     }
 
-    private void doRead(Buffer writeBuff, int offset, ByteBuffer buff, long position, Handler<AsyncResult<Buffer>> handler) {
-
+    private void doReadFromChannelAndPushIntoHandlerViaByteBuffer(
+            final Buffer vertxBufferForHandler,
+            final int offset,
+            final ByteBuffer byteBuf,
+            final long position,
+            final Handler<AsyncResult<Buffer>> handler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
-        vertx.executeBlocking(() -> {
+        this.vertx.executeBlocking(() -> {
             try {
-                Integer bytesRead = this.byteChannel.read(buff);
-                return bytesRead;
-            } catch (Exception e) {
-                log.error("", e);
-                throw e;
+                return /* bytesRead */ (Integer) this.byteChannel.read(byteBuf);
+            } catch (final RuntimeException ex) {
+                throw ex;
             }
-
-        }, asyncResult -> {
+        }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
-                context.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
+                this.context.runOnContext(ignored-> handler.handle(Future.failedFuture(asyncResult.cause())));
                 return;
             }
 
             // Do the completed check
-            Integer bytesRead = (Integer) asyncResult.result();
-            if (bytesRead == -1) {
+            final Integer bytesRead = (Integer) asyncResult.result();
+            if (bytesRead < 0) {
                 // End of file
-                context.runOnContext((v) -> {
-                        buff.flip();
-                        writeBuff.setBytes(offset, buff);
-                        buff.compact();
-                        handler.handle(Future.succeededFuture(writeBuff));
+                this.context.runOnContext(ignored -> {
+                    byteBuf.flip();
+                    vertxBufferForHandler.setBytes(offset, byteBuf);
+                    byteBuf.compact();
+                    handler.handle(Future.succeededFuture(vertxBufferForHandler));
                 });
-            } else if (buff.hasRemaining()) {
-                long pos = position;
-                pos += bytesRead;
+            } else if (byteBuf.hasRemaining()) {
                 // resubmit
-                doRead(writeBuff, offset, buff, pos, handler);
+                this.doReadFromChannelAndPushIntoHandlerViaByteBuffer(
+                        vertxBufferForHandler,
+                        offset,
+                        byteBuf,
+                        position + bytesRead,
+                        handler);
             } else {
                 // It's been fully written
-                context.runOnContext((v) -> {
-                        buff.flip();
-                        writeBuff.setBytes(offset, buff);
-                        buff.compact();
-                        handler.handle(Future.succeededFuture(writeBuff));
+                this.context.runOnContext(ignored -> {
+                    byteBuf.flip();
+                    vertxBufferForHandler.setBytes(offset, byteBuf);
+                    byteBuf.compact();
+                    handler.handle(Future.succeededFuture(vertxBufferForHandler));
                 });
             }
         });
