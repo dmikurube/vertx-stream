@@ -172,13 +172,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 future.fail(e);
             }
 
-        }, res -> {
+        }, asyncResult -> {
 
-            if (res.failed()) {
-                context.runOnContext((v) -> handler.handle(Future.failedFuture(res.cause())));
+            if (asyncResult.failed()) {
+                context.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
             } else {
                 // Do the completed check
-                Integer bytesRead = (Integer) res.result();
+                Integer bytesRead = (Integer) asyncResult.result();
                 if (bytesRead == -1) {
                     //End of file
                     context.runOnContext((v) -> {
