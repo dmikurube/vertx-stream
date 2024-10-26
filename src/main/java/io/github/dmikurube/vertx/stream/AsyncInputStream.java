@@ -35,19 +35,14 @@ import org.slf4j.LoggerFactory;
  * @author stw, antimist
  */
 public class AsyncInputStream implements ReadStream<Buffer> {
-    /**
-     * Create a new Async InputStream that can we used with a Pump
-     *
-     * @param in
-     */
-    public AsyncInputStream(Vertx vertx, Context context, InputStream in) {
+    public AsyncInputStream(final Vertx vertx, final Context context, final InputStream in) {
         this.vertx = vertx;
         this.context = context;
-        this.ch = Channels.newChannel(in);
+        this.byteChannel = Channels.newChannel(in);
         this.queue = new InboundBuffer<>(context, 0);
         queue.handler(buff -> {
             if (buff.length() > 0) {
-                handleData(buff);
+                this.doHandle(buff);
             } else {
                 handleEnd();
             }
@@ -170,7 +165,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         // an executeBlocking and use the future there
         vertx.executeBlocking(future -> {
             try {
-                Integer bytesRead = ch.read(buff);
+                Integer bytesRead = this.byteChannel.read(buff);
                 future.complete(bytesRead);
             } catch (Exception e) {
                 log.error("", e);
@@ -211,13 +206,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         });
     }
 
-    private void handleData(Buffer buff) {
-        Handler<Buffer> handler;
+    private void doHandle(Buffer buff) {
+        final Handler<Buffer> handler;
         synchronized (this) {
             handler = this.handler;
         }
         if (handler != null) {
-            checkContext();
+            this.requireRunningInEqualVertxContext();
             handler.handle(buff);
         }
     }
@@ -229,7 +224,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             endHandler = this.endHandler;
         }
         if (endHandler != null) {
-            checkContext();
+            this.requireRunningInEqualVertxContext();
             endHandler.handle(null);
         }
     }
@@ -243,10 +238,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private void checkContext() {
-        if (!vertx.getOrCreateContext().equals(context)) {
-            throw new IllegalStateException("AsyncInputStream must only be used in the context that created it, expected: " + this.context
-                + " actual " + vertx.getOrCreateContext());
+    private void requireRunningInEqualVertxContext() {
+        final Context currentContext = this.vertx.getOrCreateContext();
+        if (!this.context.equals(currentContext)) {
+            throw new IllegalStateException(
+                    "AsyncInputStream must run in the same Vert.x context in which it was created. "
+                    + this.context + " is expected, but " + currentContext);
         }
     }
 
@@ -272,7 +269,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     private void doClose(Handler<AsyncResult<Void>> handler) {
         try {
-            ch.close();
+            this.byteChannel.close();
             if (handler != null) {
                 this.vertx.runOnContext(v -> handler.handle(Future.succeededFuture()));
             }
@@ -288,7 +285,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private static final Logger log = LoggerFactory.getLogger(AsyncInputStream.class);
 
     // Based on the inputStream with the real data
-    private final ReadableByteChannel ch;
+    private final ReadableByteChannel byteChannel;
     private final Vertx vertx;
     private final Context context;
 
