@@ -16,17 +16,16 @@
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.Arguments;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author stw, antimist
@@ -170,7 +169,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 Integer bytesRead = ch.read(buff);
                 future.complete(bytesRead);
             } catch (Exception e) {
-                log.error(e);
+                log.error("", e);
                 future.fail(e);
             }
 
