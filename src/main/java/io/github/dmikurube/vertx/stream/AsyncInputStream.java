@@ -136,13 +136,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     private void doRead() {
         this.requireOpen();
-        doRead(ByteBuffer.allocate(readBufferSize));
+        doRead(ByteBuffer.allocate(READ_BUFFER_SIZE));
     }
 
     private synchronized void doRead(ByteBuffer bb) {
         if (!readInProgress) {
             readInProgress = true;
-            Buffer buff = Buffer.buffer(readBufferSize);
+            Buffer buff = Buffer.buffer(READ_BUFFER_SIZE);
             doRead(buff, 0, bb, readPos, ar -> {
                 if (ar.succeeded()) {
                     readInProgress = false;
@@ -280,7 +280,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    public static final int DEFAULT_READ_BUFFER_SIZE = 8192;
+    public static final int READ_BUFFER_SIZE = 8192;
 
     private static final Logger log = LoggerFactory.getLogger(AsyncInputStream.class);
 
@@ -297,6 +297,5 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private Handler<Throwable> exceptionHandler;
     private final InboundBuffer<Buffer> queue;
 
-    private int readBufferSize = DEFAULT_READ_BUFFER_SIZE;
     private long readPos;
 }
