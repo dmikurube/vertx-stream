@@ -143,11 +143,10 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         if (!this.readInProgress) {
             this.readInProgress = true;
             final Buffer vertxBuffer = Buffer.buffer(READ_BUFFER_SIZE);
-            this.doReadFromChannelAndPushIntoHandlerViaByteBuffer(vertxBuffer, 0, byteBuf, this.readPos, asyncResult -> {
+            this.doReadFromChannelAndPushIntoHandlerViaByteBuffer(vertxBuffer, 0, byteBuf, asyncResult -> {
                 if (asyncResult.succeeded()) {
                     this.readInProgress = false;
                     final Buffer resultVertxBuffer = asyncResult.result();
-                    this.readPos += resultVertxBuffer.length();
                     // Empty buffer represents end of file
                     if (queue.write(resultVertxBuffer) && resultVertxBuffer.length() > 0) {
                         this.doReadFromQueueIntoByteBuffer(byteBuf);
@@ -163,7 +162,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             final Buffer vertxBufferForHandler,
             final int offset,
             final ByteBuffer byteBuf,
-            final long position,
             final Handler<AsyncResult<Buffer>> handler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
@@ -195,7 +193,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                         vertxBufferForHandler,
                         offset,
                         byteBuf,
-                        position + bytesRead,
                         handler);
             } else {
                 // It's been fully written
@@ -299,6 +296,4 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private Handler<Void> endHandler;
     private Handler<Throwable> exceptionHandler;
     private final InboundBuffer<Buffer> queue;
-
-    private long readPos;
 }
