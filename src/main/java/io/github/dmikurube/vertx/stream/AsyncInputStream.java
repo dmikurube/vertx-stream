@@ -19,7 +19,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.impl.Arguments;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 import java.io.IOException;
@@ -173,7 +172,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             }
         }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
-                this.context.runOnContext(ignored-> handler.handle(Future.failedFuture(asyncResult.cause())));
+                this.context.runOnContext(ignored -> handler.handle(Future.failedFuture(asyncResult.cause())));
                 return;
             }
 
