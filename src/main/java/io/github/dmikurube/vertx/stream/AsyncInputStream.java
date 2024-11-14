@@ -65,24 +65,15 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     /*
      * (non-Javadoc)
-     * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
-     */
-    @Override
-    public synchronized AsyncInputStream endHandler(Handler<Void> endHandler) {
-        check();
-        this.endHandler = endHandler;
-        return this;
-    }
-
-    /*
-     * (non-Javadoc)
      * @see
      * io.vertx.core.streams.ReadStream#exceptionHandler(io.vertx.core.Handler)
      */
     @Override
-    public synchronized AsyncInputStream exceptionHandler(Handler<Throwable> exceptionHandler) {
-        check();
-        this.exceptionHandler = exceptionHandler;
+    public AsyncInputStream exceptionHandler(final Handler<Throwable> handler) {
+        synchronized (this) {
+            this.check();
+            this.exceptionHandler = handler;
+        }
         return this;
     }
 
@@ -91,13 +82,15 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#handler(io.vertx.core.Handler)
      */
     @Override
-    public synchronized AsyncInputStream handler(Handler<Buffer> handler) {
-        check();
-        this.dataHandler = handler;
-        if (this.dataHandler != null && !this.closed) {
-            this.doRead();
-        } else {
-            queue.clear();
+    public AsyncInputStream handler(final Handler<Buffer> handler) {
+        synchronized (this) {
+            this.check();
+            this.dataHandler = handler;
+            if (this.dataHandler != null && !this.closed) {
+                this.doRead();
+            } else {
+                this.queue.clear();
+            }
         }
         return this;
     }
@@ -107,10 +100,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#pause()
      */
     @Override
-    public synchronized AsyncInputStream pause() {
-        check();
-        queue.pause();
-        return this;
+    public AsyncInputStream pause() {
+        synchronized (this) {
+            this.check();
+            this.queue.pause();
+            return this;
+        }
     }
 
     /*
@@ -118,17 +113,32 @@ public class AsyncInputStream implements ReadStream<Buffer> {
      * @see io.vertx.core.streams.ReadStream#resume()
      */
     @Override
-    public synchronized AsyncInputStream resume() {
-        check();
-        if (!closed) {
-            queue.resume();
+    public AsyncInputStream resume() {
+        synchronized (this) {
+            this.check();
+            if (!this.closed) {
+                this.queue.resume();
+            }
         }
         return this;
     }
 
     @Override
-    public ReadStream<Buffer> fetch(long amount) {
-        queue.fetch(amount);
+    public AsyncInputStream fetch(final long amount) {
+        this.queue.fetch(amount);
+        return this;
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
+     */
+    @Override
+    public AsyncInputStream endHandler(final Handler<Void> endHandler) {
+        synchronized (this) {
+            this.check();
+            this.endHandler = endHandler;
+        }
         return this;
     }
 
