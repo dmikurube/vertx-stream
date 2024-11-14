@@ -155,26 +155,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
-        check();
-        closed = true;
-        doClose(handler);
-    }
-
-    private void doClose(Handler<AsyncResult<Void>> handler) {
-
-        try {
-            ch.close();
-            if (handler != null) {
-                this.vertx.runOnContext(v -> handler.handle(Future.succeededFuture()));
-            }
-        } catch (IOException e) {
-            if (handler != null) {
-                this.vertx.runOnContext(v -> handler.handle(Future.failedFuture(e)));
-            }
-        }
-    }
-
     public synchronized AsyncInputStream read(Buffer buffer, int offset, long position, int length,
                                               Handler<AsyncResult<Buffer>> handler) {
         Objects.requireNonNull(buffer, "buffer");
@@ -300,6 +280,29 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     /*
     public void close(Handler<AsyncResult<Void>> handler) {
         closeInternal(handler);
+    }
+    */
+
+    /*
+    private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
+        check();
+        closed = true;
+        doClose(handler);
+    }
+    */
+
+    /*
+    private void doClose(Handler<AsyncResult<Void>> handler) {
+        try {
+            ch.close();
+            if (handler != null) {
+                this.vertx.runOnContext(v -> handler.handle(Future.succeededFuture()));
+            }
+        } catch (IOException e) {
+            if (handler != null) {
+                this.vertx.runOnContext(v -> handler.handle(Future.failedFuture(e)));
+            }
+        }
     }
     */
 
