@@ -21,7 +21,11 @@
 
 package io.github.dmikurube.vertx.stream;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.Arguments;
 import io.vertx.core.streams.ReadStream;
@@ -61,8 +65,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     /**
      * Create a new Async InputStream that can we used with a Pump
-     *
-     * @param in
      */
     public AsyncInputStream(Vertx vertx, Context context, InputStream in) {
         this.vertx = vertx;
