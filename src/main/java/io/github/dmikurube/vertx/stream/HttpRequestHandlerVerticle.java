@@ -28,9 +28,9 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.LoggerHandler;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,9 @@ public class HttpRequestHandlerVerticle extends AbstractVerticle {
                     final String path = context.pathParam("repoPath");
                     final MultiMap queryParams = context.queryParams(StandardCharsets.UTF_8);
 
-                    response.send(new StreamReadStream(vertx, Stream.of("foo", path, "bar"), "head", "foot"), asyncResult -> {
+                    final InputStream source = this.getClass().getClassLoader().getResourceAsStream("sample.txt");
+
+                    response.send(new AsyncInputStream(vertx, vertx.getOrCreateContext(), source), asyncResult -> {
                         /*
                         if (asyncResult.failed()) {
                             response.setStatusCode(400);
