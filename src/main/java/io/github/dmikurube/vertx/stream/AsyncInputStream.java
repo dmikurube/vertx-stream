@@ -63,14 +63,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         });
     }
 
-    public void close() {
-        closeInternal(null);
-    }
-
-    public void close(Handler<AsyncResult<Void>> handler) {
-        closeInternal(handler);
-    }
-
     /*
      * (non-Javadoc)
      * @see io.vertx.core.streams.ReadStream#endHandler(io.vertx.core.Handler)
@@ -288,6 +280,18 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             logger.error("Unhandled exception", t);
         }
     }
+
+    /*
+    public void close() {
+        closeInternal(null);
+    }
+    */
+
+    /*
+    public void close(Handler<AsyncResult<Void>> handler) {
+        closeInternal(handler);
+    }
+    */
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncInputStream.class);
 
