@@ -43,26 +43,6 @@ import org.slf4j.LoggerFactory;
  * @author stw, antimist
  */
 public class AsyncInputStream implements ReadStream<Buffer> {
-
-    public static final int DEFAULT_READ_BUFFER_SIZE = 8192;
-    private static final Logger log = LoggerFactory.getLogger(AsyncInputStream.class);
-
-    // Based on the inputStream with the real data
-    private final ReadableByteChannel ch;
-    private final Vertx vertx;
-    private final Context context;
-
-    private boolean closed;
-    private boolean readInProgress;
-
-    private Handler<Buffer> dataHandler;
-    private Handler<Void> endHandler;
-    private Handler<Throwable> exceptionHandler;
-    private final InboundBuffer<Buffer> queue;
-
-    private int readBufferSize = DEFAULT_READ_BUFFER_SIZE;
-    private long readPos;
-
     /**
      * Create a new Async InputStream that can we used with a Pump
      */
@@ -240,7 +220,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 Integer bytesRead = ch.read(buff);
                 future.complete(bytesRead);
             } catch (Exception e) {
-                log.error("", e);
+                logger.error("", e);
                 future.fail(e);
             }
 
@@ -305,9 +285,28 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         if (exceptionHandler != null && t instanceof Exception) {
             exceptionHandler.handle(t);
         } else {
-            log.error("Unhandled exception", t);
-
+            logger.error("Unhandled exception", t);
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(AsyncInputStream.class);
+
+    private static final int DEFAULT_READ_BUFFER_SIZE = 8192;
+
+    // Based on the inputStream with the real data
+    private final ReadableByteChannel ch;
+    private final Vertx vertx;
+    private final Context context;
+
+    private final InboundBuffer<Buffer> queue;
+
+    private boolean closed;
+    private boolean readInProgress;
+
+    private Handler<Buffer> dataHandler;
+    private Handler<Void> endHandler;
+    private Handler<Throwable> exceptionHandler;
+
+    private int readBufferSize = DEFAULT_READ_BUFFER_SIZE;
+    private long readPos;
 }
