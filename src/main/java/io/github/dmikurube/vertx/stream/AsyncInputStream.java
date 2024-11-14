@@ -19,6 +19,8 @@
 // under the License.
 // ==========================================================================
 
+package io.github.dmikurube.vertx.stream;
+
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.Arguments;
