@@ -199,30 +199,29 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             if (asyncResult.failed()) {
                 this.savedContext.runOnContext(ignored -> resultHandler.handle(Future.failedFuture(asyncResult.cause())));
             } else {
-                // Do the completed check
-                Integer bytesRead = (Integer) asyncResult.result();
-                if (bytesRead == -1) {
-                    //End of file
+                final Integer bytesRead = (Integer) asyncResult.result();
+                if (bytesRead == -1) {  // End of the source stream
                     this.savedContext.runOnContext(ignored -> {
                         buff.flip();
                         writeBuff.setBytes(offset, buff);
                         buff.compact();
                         resultHandler.handle(Future.succeededFuture(writeBuff));
                     });
-                } else if (buff.hasRemaining()) {
-                    long pos = position;
-                    pos += bytesRead;
-                    // resubmit
-                    doRead(writeBuff, offset, buff, pos, resultHandler);
                 } else {
-                    // It's been fully written
-
-                    this.savedContext.runOnContext(ignored -> {
-                        buff.flip();
-                        writeBuff.setBytes(offset, buff);
-                        buff.compact();
-                        resultHandler.handle(Future.succeededFuture(writeBuff));
-                    });
+                    if (buff.hasRemaining()) {
+                        long pos = position;
+                        pos += bytesRead;
+                        // resubmit
+                        doRead(writeBuff, offset, buff, pos, resultHandler);
+                    } else {
+                        // It's been fully written
+                        this.savedContext.runOnContext(ignored -> {
+                            buff.flip();
+                            writeBuff.setBytes(offset, buff);
+                            buff.compact();
+                            resultHandler.handle(Future.succeededFuture(writeBuff));
+                        });
+                    }
                 }
             }
         });
