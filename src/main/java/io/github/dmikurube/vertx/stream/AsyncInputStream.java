@@ -180,8 +180,8 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     }
 
     private void doRead(
-            final Buffer writeBuff,
-            final int offset,
+            final Buffer destinationBuffer,
+            final int offsetInDestinationBuffer,
             final ByteBuffer buff,
             final long position,
             final Handler<AsyncResult<Buffer>> resultHandler) {
@@ -203,23 +203,23 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 if (bytesRead == -1) {  // End of the source stream
                     this.savedContext.runOnContext(ignored -> {
                         buff.flip();
-                        writeBuff.setBytes(offset, buff);
+                        destinationBuffer.setBytes(offsetInDestinationBuffer, buff);
                         buff.compact();
-                        resultHandler.handle(Future.succeededFuture(writeBuff));
+                        resultHandler.handle(Future.succeededFuture(destinationBuffer));
                     });
                 } else {
                     if (buff.hasRemaining()) {
                         long pos = position;
                         pos += bytesRead;
                         // resubmit
-                        doRead(writeBuff, offset, buff, pos, resultHandler);
+                        doRead(destinationBuffer, offsetInDestinationBuffer, buff, pos, resultHandler);
                     } else {
                         // It's been fully written
                         this.savedContext.runOnContext(ignored -> {
                             buff.flip();
-                            writeBuff.setBytes(offset, buff);
+                            destinationBuffer.setBytes(offsetInDestinationBuffer, buff);
                             buff.compact();
-                            resultHandler.handle(Future.succeededFuture(writeBuff));
+                            resultHandler.handle(Future.succeededFuture(destinationBuffer));
                         });
                     }
                 }
