@@ -55,7 +55,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             if (buff.length() > 0) {
                 this.doHandle(buff);
             } else {
-                handleEnd();
+                this.doHandleEnd();
             }
         });
         queue.drainHandler(v -> {
@@ -240,10 +240,10 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private synchronized void handleEnd() {
-        Handler<Void> endHandler;
+    private void doHandleEnd() {
+        final Handler<Void> endHandler;
         synchronized (this) {
-            handler = null;
+            this.handler = null;
             endHandler = this.endHandler;
         }
         if (endHandler != null) {
