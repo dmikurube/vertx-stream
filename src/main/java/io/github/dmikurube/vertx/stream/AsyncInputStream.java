@@ -71,7 +71,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     @Override
     public AsyncInputStream exceptionHandler(final Handler<Throwable> handler) {
         synchronized (this) {
-            this.check();
+            this.requireStreamIsOpen();
             this.exceptionHandler = handler;
         }
         return this;
@@ -84,7 +84,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     @Override
     public AsyncInputStream handler(final Handler<Buffer> handler) {
         synchronized (this) {
-            this.check();
+            this.requireStreamIsOpen();
             this.dataHandler = handler;
             if (this.dataHandler != null && !this.closed) {
                 this.doRead();
@@ -102,7 +102,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     @Override
     public AsyncInputStream pause() {
         synchronized (this) {
-            this.check();
+            this.requireStreamIsOpen();
             this.queue.pause();
             return this;
         }
@@ -115,7 +115,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     @Override
     public AsyncInputStream resume() {
         synchronized (this) {
-            this.check();
+            this.requireStreamIsOpen();
             if (!this.closed) {
                 this.queue.resume();
             }
@@ -136,13 +136,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     @Override
     public AsyncInputStream endHandler(final Handler<Void> endHandler) {
         synchronized (this) {
-            this.check();
+            this.requireStreamIsOpen();
             this.endHandler = endHandler;
         }
         return this;
     }
 
-    private void check() {
+    private void requireStreamIsOpen() {
         if (this.closed) {
             throw new IllegalStateException("Inputstream is closed");
         }
@@ -162,14 +162,14 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         Arguments.require(offset >= 0, "offset must be >= 0");
         Arguments.require(position >= 0, "position must be >= 0");
         Arguments.require(length >= 0, "length must be >= 0");
-        check();
+        this.requireStreamIsOpen();
         ByteBuffer bb = ByteBuffer.allocate(length);
         doRead(buffer, offset, bb, position, handler);
         return this;
     }
 
     private void doRead() {
-        check();
+        this.requireStreamIsOpen();
         doRead(ByteBuffer.allocate(readBufferSize));
     }
 
@@ -285,7 +285,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     /*
     private synchronized void closeInternal(Handler<AsyncResult<Void>> handler) {
-        check();
+        this.requireStreamIsOpen();
         closed = true;
         doClose(handler);
     }
