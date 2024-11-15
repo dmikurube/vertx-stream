@@ -184,7 +184,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             final int offset,
             final ByteBuffer buff,
             final long position,
-            final Handler<AsyncResult<Buffer>> handler) {
+            final Handler<AsyncResult<Buffer>> resultHandler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
         this.vertx.<Integer>executeBlocking(() -> {
@@ -197,31 +197,31 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             }
         }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
-                this.savedContext.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
+                this.savedContext.runOnContext(ignored -> resultHandler.handle(Future.failedFuture(asyncResult.cause())));
             } else {
                 // Do the completed check
                 Integer bytesRead = (Integer) asyncResult.result();
                 if (bytesRead == -1) {
                     //End of file
-                    this.savedContext.runOnContext((v) -> {
+                    this.savedContext.runOnContext(ignored -> {
                         buff.flip();
                         writeBuff.setBytes(offset, buff);
                         buff.compact();
-                        handler.handle(Future.succeededFuture(writeBuff));
+                        resultHandler.handle(Future.succeededFuture(writeBuff));
                     });
                 } else if (buff.hasRemaining()) {
                     long pos = position;
                     pos += bytesRead;
                     // resubmit
-                    doRead(writeBuff, offset, buff, pos, handler);
+                    doRead(writeBuff, offset, buff, pos, resultHandler);
                 } else {
                     // It's been fully written
 
-                    this.savedContext.runOnContext((v) -> {
+                    this.savedContext.runOnContext(ignored -> {
                         buff.flip();
                         writeBuff.setBytes(offset, buff);
                         buff.compact();
-                        handler.handle(Future.succeededFuture(writeBuff));
+                        resultHandler.handle(Future.succeededFuture(writeBuff));
                     });
                 }
             }
