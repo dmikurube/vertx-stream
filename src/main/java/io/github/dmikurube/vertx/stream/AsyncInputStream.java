@@ -101,8 +101,8 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         synchronized (this) {
             this.requireStreamIsOpen();
             this.queue.pause();
-            return this;
         }
+        return this;
     }
 
     /*
