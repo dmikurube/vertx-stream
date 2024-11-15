@@ -179,21 +179,23 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private void doRead(Buffer writeBuff, int offset, ByteBuffer buff, long position, Handler<AsyncResult<Buffer>> handler) {
-
+    private void doRead(
+            final Buffer writeBuff,
+            final int offset,
+            final ByteBuffer buff,
+            final long position,
+            final Handler<AsyncResult<Buffer>> handler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
-        vertx.executeBlocking(future -> {
+        this.vertx.<Integer>executeBlocking(() -> {
             try {
-                Integer bytesRead = ch.read(buff);
-                future.complete(bytesRead);
-            } catch (Exception e) {
-                logger.error("", e);
-                future.fail(e);
+                final Integer bytesRead = this.ch.read(buff);
+                return bytesRead;
+            } catch (final Exception ex) {
+                logger.error("Failure in reading.", ex);
+                throw new RuntimeException(ex);
             }
-
-        }, res -> {
-
+        }, true /* ordered */, res -> {
             if (res.failed()) {
                 expectedContext.runOnContext((v) -> handler.handle(Future.failedFuture(res.cause())));
             } else {
