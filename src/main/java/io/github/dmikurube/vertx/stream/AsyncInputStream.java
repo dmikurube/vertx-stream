@@ -195,12 +195,12 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 logger.error("Failure in reading.", ex);
                 throw new RuntimeException(ex);
             }
-        }, true /* ordered */, res -> {
-            if (res.failed()) {
-                expectedContext.runOnContext((v) -> handler.handle(Future.failedFuture(res.cause())));
+        }, true /* ordered */, asyncResult -> {
+            if (asyncResult.failed()) {
+                expectedContext.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
             } else {
                 // Do the completed check
-                Integer bytesRead = (Integer) res.result();
+                Integer bytesRead = (Integer) asyncResult.result();
                 if (bytesRead == -1) {
                     //End of file
                     expectedContext.runOnContext((v) -> {
