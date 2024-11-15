@@ -53,7 +53,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         this.queue = new InboundBuffer<>(expectedContext, 0);
         queue.handler(buff -> {
             if (buff.length() > 0) {
-                handleData(buff);
+                this.doHandle(buff);
             } else {
                 handleEnd();
             }
@@ -85,8 +85,8 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     public AsyncInputStream handler(final Handler<Buffer> handler) {
         synchronized (this) {
             this.requireStreamIsOpen();
-            this.dataHandler = handler;
-            if (this.dataHandler != null && !this.closed) {
+            this.handler = handler;
+            if (this.handler != null && !this.closed) {
                 this.doRead();
             } else {
                 this.queue.clear();
@@ -229,21 +229,21 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         });
     }
 
-    private void handleData(Buffer buff) {
-        Handler<Buffer> handler;
+    private void doHandle(final Buffer buffer) {
+        final Handler<Buffer> handler;
         synchronized (this) {
-            handler = this.dataHandler;
+            handler = this.handler;
         }
         if (handler != null) {
             this.requireRunningInEqualVertxContext();
-            handler.handle(buff);
+            handler.handle(buffer);
         }
     }
 
     private synchronized void handleEnd() {
         Handler<Void> endHandler;
         synchronized (this) {
-            dataHandler = null;
+            handler = null;
             endHandler = this.endHandler;
         }
         if (endHandler != null) {
@@ -324,7 +324,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private boolean closed;
     private boolean readInProgress;
 
-    private Handler<Buffer> dataHandler;
+    private Handler<Buffer> handler;
     private Handler<Void> endHandler;
     private Handler<Throwable> exceptionHandler;
 
