@@ -43,11 +43,11 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     /**
      * Create a new Async InputStream that can we used with a Pump
      */
-    public AsyncInputStream(final Vertx vertx, final Context expectedContext, final InputStream in) {
+    public AsyncInputStream(final Vertx vertx, final Context savedContext, final InputStream in) {
         this.vertx = vertx;
-        this.expectedContext = expectedContext;
+        this.savedContext = savedContext;
         this.ch = Channels.newChannel(in);
-        this.queue = new InboundBuffer<>(expectedContext, 0);
+        this.queue = new InboundBuffer<>(savedContext, 0);
         queue.handler(buff -> {
             if (buff.length() > 0) {
                 this.doHandle(buff);
@@ -147,10 +147,10 @@ public class AsyncInputStream implements ReadStream<Buffer> {
 
     private void requireRunningInEqualVertxContext() {
         final Context currentContext = this.vertx.getOrCreateContext();
-        if (!this.expectedContext.equals(currentContext)) {
+        if (!this.savedContext.equals(currentContext)) {
             throw new IllegalStateException(
                     "AsyncInputStream must run in the same Vert.x context in which it was created. "
-                    + this.expectedContext + " is expected, but " + currentContext);
+                    + this.savedContext + " is expected, but " + currentContext);
         }
     }
 
@@ -197,13 +197,13 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             }
         }, true /* ordered */, asyncResult -> {
             if (asyncResult.failed()) {
-                expectedContext.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
+                this.savedContext.runOnContext((v) -> handler.handle(Future.failedFuture(asyncResult.cause())));
             } else {
                 // Do the completed check
                 Integer bytesRead = (Integer) asyncResult.result();
                 if (bytesRead == -1) {
                     //End of file
-                    expectedContext.runOnContext((v) -> {
+                    this.savedContext.runOnContext((v) -> {
                         buff.flip();
                         writeBuff.setBytes(offset, buff);
                         buff.compact();
@@ -217,7 +217,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 } else {
                     // It's been fully written
 
-                    expectedContext.runOnContext((v) -> {
+                    this.savedContext.runOnContext((v) -> {
                         buff.flip();
                         writeBuff.setBytes(offset, buff);
                         buff.compact();
@@ -316,7 +316,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     // Based on the inputStream with the real data
     private final ReadableByteChannel ch;
     private final Vertx vertx;
-    private final Context expectedContext;
+    private final Context savedContext;
 
     private final InboundBuffer<Buffer> queue;
 
