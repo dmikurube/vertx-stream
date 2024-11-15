@@ -176,7 +176,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                         doRead(bb);
                     }
                 } else {
-                    handleException(ar.cause());
+                    this.doHandleException(ar.cause());
                 }
             });
         }
@@ -252,11 +252,11 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         }
     }
 
-    private void handleException(Throwable t) {
-        if (exceptionHandler != null && t instanceof Exception) {
-            exceptionHandler.handle(t);
+    private void doHandleException(final Throwable throwable) {
+        if (this.exceptionHandler != null && throwable instanceof Exception) {
+            this.exceptionHandler.handle(throwable);
         } else {
-            logger.error("Unhandled exception", t);
+            this.logger.error("Unhandled exception.", throwable);
         }
     }
 
