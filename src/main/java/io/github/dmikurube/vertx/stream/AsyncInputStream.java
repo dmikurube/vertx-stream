@@ -163,7 +163,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
         if (!readInProgress) {
             readInProgress = true;
             Buffer buff = Buffer.buffer(readBufferSize);
-            doRead(buff, 0, bb, readPos, ar -> {
+            doRead(buff, 0, bb, ar -> {
                 if (ar.succeeded()) {
                     readInProgress = false;
                     Buffer buffer = ar.result();
@@ -183,7 +183,6 @@ public class AsyncInputStream implements ReadStream<Buffer> {
             final Buffer destinationBuffer,
             final int offsetInDestinationBuffer,
             final ByteBuffer sourceByteBuffer,
-            final long position,
             final Handler<AsyncResult<Buffer>> resultHandler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
@@ -209,10 +208,7 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                     });
                 } else {
                     if (sourceByteBuffer.hasRemaining()) {
-                        long pos = position;
-                        pos += bytesRead;
-                        // resubmit
-                        doRead(destinationBuffer, offsetInDestinationBuffer, sourceByteBuffer, pos, resultHandler);
+                        doRead(destinationBuffer, offsetInDestinationBuffer, sourceByteBuffer, resultHandler);
                     } else {
                         // It's been fully written
                         this.savedContext.runOnContext(ignored -> {
