@@ -182,14 +182,14 @@ public class AsyncInputStream implements ReadStream<Buffer> {
     private void doRead(
             final Buffer destinationBuffer,
             final int offsetInDestinationBuffer,
-            final ByteBuffer buff,
+            final ByteBuffer sourceByteBuffer,
             final long position,
             final Handler<AsyncResult<Buffer>> resultHandler) {
         // ReadableByteChannel doesn't have a completion handler, so we wrap it into
         // an executeBlocking and use the future there
         this.vertx.<Integer>executeBlocking(() -> {
             try {
-                final Integer bytesRead = this.ch.read(buff);
+                final Integer bytesRead = this.ch.read(sourceByteBuffer);
                 return bytesRead;
             } catch (final Exception ex) {
                 logger.error("Failure in reading.", ex);
@@ -202,23 +202,23 @@ public class AsyncInputStream implements ReadStream<Buffer> {
                 final Integer bytesRead = (Integer) asyncResult.result();
                 if (bytesRead == -1) {  // End of the source stream
                     this.savedContext.runOnContext(ignored -> {
-                        buff.flip();
-                        destinationBuffer.setBytes(offsetInDestinationBuffer, buff);
-                        buff.compact();
+                        sourceByteBuffer.flip();
+                        destinationBuffer.setBytes(offsetInDestinationBuffer, sourceByteBuffer);
+                        sourceByteBuffer.compact();
                         resultHandler.handle(Future.succeededFuture(destinationBuffer));
                     });
                 } else {
-                    if (buff.hasRemaining()) {
+                    if (sourceByteBuffer.hasRemaining()) {
                         long pos = position;
                         pos += bytesRead;
                         // resubmit
-                        doRead(destinationBuffer, offsetInDestinationBuffer, buff, pos, resultHandler);
+                        doRead(destinationBuffer, offsetInDestinationBuffer, sourceByteBuffer, pos, resultHandler);
                     } else {
                         // It's been fully written
                         this.savedContext.runOnContext(ignored -> {
-                            buff.flip();
-                            destinationBuffer.setBytes(offsetInDestinationBuffer, buff);
-                            buff.compact();
+                            sourceByteBuffer.flip();
+                            destinationBuffer.setBytes(offsetInDestinationBuffer, sourceByteBuffer);
+                            sourceByteBuffer.compact();
                             resultHandler.handle(Future.succeededFuture(destinationBuffer));
                         });
                     }
