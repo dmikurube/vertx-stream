@@ -5,7 +5,7 @@ vertx = "4.5.11"
 slf4j = "2.0.16"
 logback = "1.5.12"
 
-junit5 = "5.11.3"
+junit5 = "5.11.4"
 
 checkstyle = "10.18.2"
 
