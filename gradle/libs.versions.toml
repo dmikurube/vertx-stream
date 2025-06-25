@@ -1,6 +1,6 @@
 [versions]
 
-vertx = "4.5.14"
+vertx = "5.0.0"
 
 slf4j = "2.0.17"
 logback = "1.5.18"
