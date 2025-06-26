@@ -9,19 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    groups:
-      vertx:
-        applies-to: version-updates
-        patterns:
-        - "io.vertx:*"
-        update-types:
-        - "minor"
-        - "patch"
-      slf4j:
-        applies-to: version-updates
-        patterns:
-        - "org.slf4j:*"
-        - "ch.qos.logback:*"
-        update-types:
-        - "minor"
-        - "patch"
+    ignore:
+      - dependency-name: "io.vertx:*"
+        versions: ">=5"
